@@ -1,11 +1,18 @@
+from __future__ import annotations
+
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.calendar_sync import CalendarSync
+    from app.models.meeting import Meeting
 
 
 class User(Base):
@@ -41,13 +48,23 @@ class User(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
+    )
+
+    meetings: Mapped[list["Meeting"]] = relationship(
+        "Meeting",
+        back_populates="organizer",
+    )
+
+    calendar_syncs: Mapped[list["CalendarSync"]] = relationship(
+        "CalendarSync",
+        back_populates="user",
     )

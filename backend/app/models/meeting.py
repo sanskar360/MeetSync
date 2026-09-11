@@ -1,11 +1,17 @@
-import uuid
-from datetime import datetime
+from __future__ import annotations
 
-from sqlalchemy import DateTime, String, Text
+import uuid
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
+
+from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class Meeting(Base):
@@ -53,8 +59,9 @@ class Meeting(Base):
     # Organizer
     organizer_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
+        ForeignKey("users.id"),
         nullable=True,
-    )
+)
 
     # Google Calendar synchronization fields
     event_type: Mapped[str] = mapped_column(
@@ -93,13 +100,18 @@ class Meeting(Base):
     # MeetSync timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
+    )
+
+    organizer: Mapped["User | None"] = relationship(
+        "User",
+        back_populates="meetings",
     )
