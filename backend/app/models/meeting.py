@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,10 +12,21 @@ from app.core.database import Base
 
 if TYPE_CHECKING:
     from app.models.user import User
+    from app.models.meeting_participant import MeetingParticipant
+    from app.models.calendar import Calendar
+    from app.models.meeting_source import MeetingSource
 
 
 class Meeting(Base):
     __tablename__ = "meetings"
+
+    __table_args__ = (
+    UniqueConstraint(
+        "calendar_id",
+        "google_event_id",
+        name="uq_meeting_calendar_event",
+    ),
+)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -26,12 +37,17 @@ class Meeting(Base):
     # Google Calendar identifiers
     google_event_id: Mapped[str] = mapped_column(
         String,
-        unique=True,
         nullable=False,
     )
 
-    calendar_id: Mapped[str] = mapped_column(
+    google_ical_uid: Mapped[str | None] = mapped_column(
         String,
+        nullable=True,
+    )
+
+    calendar_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("calendars.id"),
         nullable=False,
     )
 
@@ -113,5 +129,20 @@ class Meeting(Base):
 
     organizer: Mapped["User | None"] = relationship(
         "User",
+        back_populates="meetings",
+    )
+
+    participants: Mapped[list["MeetingParticipant"]] = relationship(
+        "MeetingParticipant",
+        back_populates="meeting",
+    )
+
+    sources: Mapped[list["MeetingSource"]] = relationship(
+        "MeetingSource",
+        back_populates="meeting",
+    )
+
+    calendar: Mapped["Calendar"] = relationship(
+        "Calendar",
         back_populates="meetings",
     )

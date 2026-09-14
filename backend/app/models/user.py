@@ -11,8 +11,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 if TYPE_CHECKING:
-    from app.models.calendar_sync import CalendarSync
     from app.models.meeting import Meeting
+    from app.models.google_credential import GoogleCredential
+    from app.models.calendar import Calendar
+    from app.models.meeting_participant import MeetingParticipant
 
 
 class User(Base):
@@ -64,7 +66,18 @@ class User(Base):
         back_populates="organizer",
     )
 
-    calendar_syncs: Mapped[list["CalendarSync"]] = relationship(
-        "CalendarSync",
+    google_credential: Mapped["GoogleCredential | None"] = relationship(
+        "GoogleCredential",
         back_populates="user",
+        uselist=False,
+    )
+
+    calendars: Mapped[list["Calendar"]] = relationship(
+    "Calendar",
+    back_populates="user",
+    )
+
+    meeting_participations: Mapped[list["MeetingParticipant"]] = relationship(
+    "MeetingParticipant",
+    back_populates="user",
     )

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 if TYPE_CHECKING:
-    from app.models.user import User
+    from app.models.calendar import Calendar
 
 
 class CalendarSync(Base):
@@ -23,16 +23,12 @@ class CalendarSync(Base):
         default=uuid.uuid4,
     )
 
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    calendar_id: Mapped[uuid.UUID] = mapped_column(
     UUID(as_uuid=True),
-    ForeignKey("users.id"),
+    ForeignKey("calendars.id"),
+    unique=True,
     nullable=False,
 )
-
-    calendar_id: Mapped[str] = mapped_column(
-        String,
-        nullable=False,
-    )
 
     sync_token: Mapped[str | None] = mapped_column(
         Text,
@@ -68,7 +64,7 @@ class CalendarSync(Base):
         nullable=False,
     )
 
-    user: Mapped["User"] = relationship(
-        "User",
-        back_populates="calendar_syncs",
+    calendar: Mapped["Calendar"] = relationship(
+        "Calendar",
+        back_populates="sync",
     )

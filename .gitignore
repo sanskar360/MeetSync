@@ -60,3 +60,5 @@ storage/*
 
 .DS_Store
 Thumbs.db
+
+storage/
