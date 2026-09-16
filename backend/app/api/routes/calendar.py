@@ -4,9 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.repositories.calendar_repository import get_calendar_by_id
 from app.services.calendar_service import sync_user_calendars
 from app.services.google_calendar_service import list_calendar_events
 from app.services.meeting_sync_service import sync_calendar_meetings
+
 
 router = APIRouter(
     prefix="/api/calendars",
@@ -25,9 +27,19 @@ def sync_calendars(
             user_id=user_id,
         )
 
+        meeting_count = 0
+
+        for calendar in calendars:
+            meeting_count += sync_calendar_meetings(
+                db=db,
+                user_id=user_id,
+                calendar=calendar,
+            )
+
         return {
-            "message": "Calendars synchronized successfully",
-            "count": len(calendars),
+            "message": "Calendars and meetings synchronized successfully",
+            "calendar_count": len(calendars),
+            "meeting_count": meeting_count,
             "calendars": [
                 {
                     "id": str(calendar.id),
@@ -44,6 +56,7 @@ def sync_calendars(
             detail=str(exc),
         )
 
+
 @router.get("/events")
 def get_calendar_events(
     user_id: UUID,
@@ -51,7 +64,7 @@ def get_calendar_events(
     db: Session = Depends(get_db),
 ):
     try:
-        events = list_calendar_events(
+        events, _ = list_calendar_events(
             db=db,
             user_id=user_id,
             google_calendar_id=google_calendar_id,
@@ -68,14 +81,13 @@ def get_calendar_events(
             detail=str(exc),
         )
 
+
 @router.post("/sync/{calendar_id}/meetings")
 def sync_meetings(
     calendar_id: UUID,
     user_id: UUID,
     db: Session = Depends(get_db),
 ):
-    from app.repositories.calendar_repository import get_calendar_by_id
-
     calendar = get_calendar_by_id(
         db=db,
         calendar_id=calendar_id,

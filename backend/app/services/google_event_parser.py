@@ -6,7 +6,6 @@ def parse_google_event(event: dict) -> dict:
     Convert a Google Calendar event payload into
     the fields MeetSync needs for the meetings table.
     """
-
     start_data = event.get("start", {})
     end_data = event.get("end", {})
 
@@ -42,7 +41,6 @@ def _parse_event_datetime(data: dict) -> datetime:
     All-day events use:
         date
     """
-
     if "dateTime" in data:
         return datetime.fromisoformat(
             data["dateTime"].replace("Z", "+00:00")
@@ -61,3 +59,22 @@ def _parse_timestamp(value: str | None) -> datetime | None:
     return datetime.fromisoformat(
         value.replace("Z", "+00:00")
     )
+
+
+def is_meeting_event(event: dict) -> bool:
+    """
+    Determine whether a Google Calendar event should be
+    treated as a MeetSync meeting.
+    """
+    # Events with attendees are considered meetings.
+    if event.get("attendees"):
+        return True
+
+    # Events with Google Meet/conference information are meetings.
+    if event.get("hangoutLink"):
+        return True
+
+    if event.get("conferenceData"):
+        return True
+
+    return False

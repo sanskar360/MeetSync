@@ -1,6 +1,7 @@
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -54,13 +55,8 @@ def list_calendar_events(
     db: Session,
     user_id,
     google_calendar_id: str,
-) -> list[dict]:
-    """
-    Fetch events from a Google Calendar.
-
-    This performs the API retrieval only.
-    Persistence will be handled by the event sync service.
-    """
+    sync_token: str | None = None,
+) -> tuple[list[dict], str | None]:
 
     calendar_service = get_calendar_service(
         db=db,
@@ -71,23 +67,35 @@ def list_calendar_events(
     page_token = None
 
     while True:
-        response = (
-            calendar_service.events()
-            .list(
-                calendarId=google_calendar_id,
-                pageToken=page_token,
-                singleEvents=True,
-                showDeleted=True,
-                maxResults=2500,
+        try:
+            response = (
+                calendar_service.events()
+                .list(
+                    calendarId=google_calendar_id,
+                    pageToken=page_token,
+                    syncToken=sync_token,
+                    singleEvents=True,
+                    showDeleted=True,
+                    maxResults=2500,
+                )
+                .execute()
             )
-            .execute()
-        )
+
+        except HttpError as exc:
+            if exc.resp.status == 410 and sync_token:
+                # Sync token expired. Perform a full synchronization.
+                return list_calendar_events(
+                    db=db,
+                    user_id=user_id,
+                    google_calendar_id=google_calendar_id,
+                    sync_token=None,
+                )
+
+            raise
 
         events.extend(response.get("items", []))
 
         page_token = response.get("nextPageToken")
 
         if not page_token:
-            break
-
-    return events
+            return events, response.get("nextSyncToken")

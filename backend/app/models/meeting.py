@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
+
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.meeting_participant import MeetingParticipant
@@ -21,12 +22,12 @@ class Meeting(Base):
     __tablename__ = "meetings"
 
     __table_args__ = (
-    UniqueConstraint(
-        "calendar_id",
-        "google_event_id",
-        name="uq_meeting_calendar_event",
-    ),
-)
+        UniqueConstraint(
+            "google_ical_uid",
+            "start_time",
+            name="uq_meeting_ical_uid_start_time",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -77,7 +78,12 @@ class Meeting(Base):
         UUID(as_uuid=True),
         ForeignKey("users.id"),
         nullable=True,
-)
+    )
+
+    organizer_email: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+    )
 
     # Google Calendar synchronization fields
     event_type: Mapped[str] = mapped_column(
