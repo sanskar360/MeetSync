@@ -12,7 +12,6 @@ from app.workers.watch_renewal import watch_renewal_scheduler_task
 
 logger = logging.getLogger(__name__)
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     scheduler_task = None
