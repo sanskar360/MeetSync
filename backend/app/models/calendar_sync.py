@@ -35,6 +35,22 @@ class CalendarSync(Base):
         nullable=True,
     )
 
+    channel_id: Mapped[str | None] = mapped_column(
+        String,
+        index=True,
+        nullable=True,
+    )
+
+    resource_id: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+    )
+
+    channel_expiration: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
     last_synced_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,

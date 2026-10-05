@@ -86,7 +86,16 @@ def sync_calendar_meetings(
 
                 meeting = None
 
-                if parsed["google_ical_uid"]:
+                # 1. Try finding meeting via meeting_source
+                source = get_source_by_calendar_event(
+                    db=db,
+                    calendar_id=calendar.id,
+                    google_event_id=parsed["google_event_id"],
+                )
+
+                if source and source.meeting:
+                    meeting = source.meeting
+                elif parsed.get("google_ical_uid") and parsed.get("start_time"):
                     meeting = get_meeting_by_identity(
                         db=db,
                         google_ical_uid=parsed["google_ical_uid"],
@@ -102,6 +111,14 @@ def sync_calendar_meetings(
                     )
 
                     meeting.raw_payload_path = raw_payload_path
+
+                    if source:
+                        update_meeting_source(
+                            source=source,
+                            google_etag=parsed.get("google_etag"),
+                            google_sequence=parsed.get("google_sequence"),
+                            raw_payload_path=raw_payload_path,
+                        )
 
                     processed_meeting_ids.add(meeting.id)
 

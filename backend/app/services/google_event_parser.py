@@ -31,7 +31,7 @@ def parse_google_event(event: dict) -> dict:
     }
 
 
-def _parse_event_datetime(data: dict) -> datetime:
+def _parse_event_datetime(data: dict) -> datetime | None:
     """
     Parse a Google Calendar start/end object.
 
@@ -49,7 +49,7 @@ def _parse_event_datetime(data: dict) -> datetime:
     if "date" in data:
         return datetime.fromisoformat(data["date"])
 
-    raise ValueError("Google Calendar event has no valid start/end time")
+    return None
 
 
 def _parse_timestamp(value: str | None) -> datetime | None:
