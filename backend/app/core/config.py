@@ -27,5 +27,25 @@ class Settings:
         in ("true", "1", "yes")
     )
 
+    # Authentication & Session Security (Phase 2)
+    ENV: str = os.getenv("ENV", "development")
+    JWT_SECRET_KEY: str = os.getenv(
+        "JWT_SECRET_KEY", "dev-insecure-secret-key-change-in-production-meetsync-32chars"
+    )
+    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")
+    )
 
-settings = Settings()
+    # Transcript Storage & Processing (Phase 2)
+    MAX_TRANSCRIPT_FILE_SIZE_BYTES: int = int(
+        os.getenv("MAX_TRANSCRIPT_FILE_SIZE_BYTES", str(25 * 1024 * 1024))
+    )
+    TRANSCRIPT_MIN_WORD_COUNT: int = int(
+        os.getenv("TRANSCRIPT_MIN_WORD_COUNT", "25")
+    )
+    TRANSCRIPT_STORAGE_BACKEND: str = os.getenv("TRANSCRIPT_STORAGE_BACKEND", "local")
+    TRANSCRIPT_STORAGE_DIR: str = os.getenv("TRANSCRIPT_STORAGE_DIR", "storage/transcripts")
+
+
+settings = Settings()
