@@ -238,10 +238,9 @@ def sync_calendar_meetings(
                     else None
                 )
 
-                role = (
-                    "organizer"
-                    if attendee.get("organizer")
-                    else "participant"
+                is_organizer = attendee.get("organizer") or (
+                    parsed["organizer_email"]
+                    and email.lower() == parsed["organizer_email"].lower()
                 )
 
                 participant = get_participant_by_email(
@@ -251,14 +250,23 @@ def sync_calendar_meetings(
                 )
 
                 if participant:
+                    # Preserve manually assigned roles across syncs
+                    if participant.role in ("note_taker", "personal_assistant") and not is_organizer:
+                        role = participant.role
+                    elif is_organizer:
+                        role = "agenda_owner"
+                    else:
+                        role = "participant"
+
                     update_participant(
                         participant=participant,
-                        user_id=attendee_user_id,
+                        user_id=attendee_user_id or participant.user_id,
                         role=role,
                         response_status=attendee.get("responseStatus"),
                     )
 
                 else:
+                    role = "agenda_owner" if is_organizer else "participant"
                     create_participant(
                         db=db,
                         meeting_id=meeting.id,
@@ -267,6 +275,27 @@ def sync_calendar_meetings(
                         role=role,
                         response_status=attendee.get("responseStatus"),
                     )
+
+            # Ensure agenda_owner participant record exists even if Google omitted organizer from attendees
+            if parsed["organizer_email"]:
+                org_participant = get_participant_by_email(
+                    db=db,
+                    meeting_id=meeting.id,
+                    email=parsed["organizer_email"],
+                )
+                if not org_participant:
+                    create_participant(
+                        db=db,
+                        meeting_id=meeting.id,
+                        email=parsed["organizer_email"],
+                        user_id=organizer_user_id,
+                        role="agenda_owner",
+                        response_status="accepted",
+                    )
+                else:
+                    org_participant.role = "agenda_owner"
+                    if organizer_user_id and not org_participant.user_id:
+                        org_participant.user_id = organizer_user_id
 
             processed_meeting_ids.add(meeting.id)
 

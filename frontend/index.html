@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MeetSync - Intelligent Meeting Operations</title>
+  <meta name="description" content="AI-driven meeting synchronization, note taking, deterministic transcript validation, and executive search.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-background">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+  </div>
+
+  <div id="app" class="app-container">
+    <!-- Navigation Bar -->
+    <header class="navbar glass-card">
+      <div class="brand">
+        <div class="logo-icon">⚡</div>
+        <div class="brand-text">
+          <span class="brand-title">MeetSync</span>
+          <span class="brand-badge">Phase 2</span>
+        </div>
+      </div>
+
+      <nav class="nav-links" id="mainNav" style="display: none;">
+        <button id="navDashboardBtn" class="nav-btn active" onclick="switchTab('dashboard')">
+          <span class="nav-icon">📅</span> Meetings
+        </button>
+        <button id="navSearchBtn" class="nav-btn" onclick="switchTab('search')">
+          <span class="nav-icon">🔍</span> Search & Archive
+        </button>
+      </nav>
+
+      <div class="user-panel" id="userPanel">
+        <button id="loginBtn" class="btn btn-primary" onclick="initiateGoogleLogin()">
+          <span class="google-icon">G</span> Sign in with Google
+        </button>
+        <div id="userProfile" class="user-profile" style="display: none;">
+          <img id="userAvatar" class="user-avatar" src="" alt="User Avatar">
+          <div class="user-info">
+            <span id="userName" class="user-name">User</span>
+            <span id="userEmail" class="user-email">email@example.com</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="logout()">Sign Out</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Alerts Banner -->
+      <div id="alertContainer" class="alert-container"></div>
+
+      <!-- View: Login Prompt (When not logged in) -->
+      <section id="loginView" class="view-section hero-section">
+        <div class="hero-card glass-card">
+          <div class="hero-badge">Next-Gen Meeting Intelligence</div>
+          <h1 class="hero-title">Orchestrate Meetings with Role-Specific Authority</h1>
+          <p class="hero-description">
+            Automatic Google Calendar synchronization, meeting-specific RBAC, structured Note Taker authoring, deterministic multi-format transcript verification, and executive search for Personal Assistants.
+          </p>
+          <div class="hero-actions">
+            <button class="btn btn-primary btn-lg" onclick="initiateGoogleLogin()">
+              <span class="google-icon">G</span> Sign in to Get Started
+            </button>
+          </div>
+          <div class="hero-grid">
+            <div class="hero-feature">
+              <span class="feature-icon">👑</span>
+              <h3>Agenda Owner</h3>
+              <p>Delegates responsibilities and manages meeting participant roles safely.</p>
+            </div>
+            <div class="hero-feature">
+              <span class="feature-icon">✍️</span>
+              <h3>Note Taker</h3>
+              <p>Exclusively authors meeting minutes, structured action items, and uploads transcripts.</p>
+            </div>
+            <div class="hero-feature">
+              <span class="feature-icon">💼</span>
+              <h3>Personal Assistant</h3>
+              <p>Searches archives, notes, and transcripts across delegated executive meetings.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View: Meetings Dashboard -->
+      <section id="dashboardView" class="view-section" style="display: none;">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title">My Meetings</h1>
+            <p class="section-subtitle">Meetings synchronized from Google Calendar with your active role.</p>
+          </div>
+          <button class="btn btn-secondary" onclick="loadUserMeetings()">
+            <span>🔄</span> Refresh
+          </button>
+        </div>
+
+        <div id="meetingsList" class="meetings-grid">
+          <!-- Dynamic Meeting Cards Loaded Here -->
+        </div>
+      </section>
+
+      <!-- View: Meeting Workspace / Details -->
+      <section id="meetingDetailView" class="view-section" style="display: none;">
+        <div class="detail-header glass-card">
+          <div class="detail-back">
+            <button class="btn btn-secondary btn-sm" onclick="switchTab('dashboard')">← Back to Meetings</button>
+          </div>
+          <div class="detail-meta">
+            <span id="detailRoleBadge" class="role-badge">Participant</span>
+            <h1 id="detailTitle" class="detail-title">Meeting Title</h1>
+            <div class="detail-subinfo">
+              <span id="detailTime">🕒 Oct 11, 2026</span>
+              <span id="detailOrganizer">👤 organizer@example.com</span>
+              <a id="detailMeetLink" href="#" target="_blank" class="meet-link" style="display: none;">🎥 Join Google Meet</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="workspace-tabs">
+          <button class="tab-btn active" onclick="switchDetailTab('overview')">👥 Participants & Roles</button>
+          <button class="tab-btn" onclick="switchDetailTab('notes')">📝 Meeting Notes</button>
+          <button class="tab-btn" onclick="switchDetailTab('transcripts')">🎙️ Transcripts & Validation</button>
+        </div>
+
+        <!-- Detail Subtab: Participants -->
+        <div id="subtabParticipants" class="subtab-content glass-card">
+          <div class="subtab-header">
+            <div>
+              <h2>Participants & Permissions</h2>
+              <p id="roleNotice">Only the Agenda Owner can reassign participant roles.</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Current Role</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="participantsTableBody">
+                <!-- Loaded Dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Detail Subtab: Notes -->
+        <div id="subtabNotes" class="subtab-content glass-card" style="display: none;">
+          <div class="subtab-header">
+            <div>
+              <h2>Meeting Notes & Action Items</h2>
+              <p>Collaborative documentation. Only the designated Note Taker can create and edit notes.</p>
+            </div>
+            <div id="noteTakerActionBtnContainer"></div>
+          </div>
+
+          <!-- Note Editor Form (Visible to Note Takers) -->
+          <div id="noteEditorContainer" class="note-editor glass-subcard" style="display: none;">
+            <h3 id="noteEditorHeading">New Meeting Note</h3>
+            <div class="form-group">
+              <label for="noteTitleInput">Title</label>
+              <input type="text" id="noteTitleInput" class="form-input" placeholder="e.g. Sprint 24 Sync & Action Items">
+            </div>
+            <div class="form-group">
+              <label for="noteContentInput">Notes Content (Markdown supported)</label>
+              <textarea id="noteContentInput" class="form-textarea" rows="5" placeholder="Key discussion topics, decisions, and updates..."></textarea>
+            </div>
+
+            <!-- Action Items Builder -->
+            <div class="action-items-builder">
+              <label>Action Items</label>
+              <div id="actionItemsList" class="action-items-list"></div>
+              <div class="action-item-add-row">
+                <input type="text" id="newActionDesc" class="form-input" placeholder="Action item description...">
+                <input type="email" id="newActionAssignee" class="form-input" placeholder="Assignee email...">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addActionItemRow()">+ Add Item</button>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn btn-primary" onclick="saveNote()">Save Note</button>
+              <button class="btn btn-secondary" onclick="cancelNoteEditor()">Cancel</button>
+            </div>
+          </div>
+
+          <div id="notesListContainer" class="notes-feed">
+            <!-- Dynamic Notes List -->
+          </div>
+        </div>
+
+        <!-- Detail Subtab: Transcripts -->
+        <div id="subtabTranscripts" class="subtab-content glass-card" style="display: none;">
+          <div class="subtab-header">
+            <div>
+              <h2>Transcripts & Deterministic Audit</h2>
+              <p>Secure multi-format storage (.txt, .vtt, .srt, .md, .json) with rule-based validation.</p>
+            </div>
+          </div>
+
+          <!-- Transcript Upload Zone (Only for Note Takers) -->
+          <div id="transcriptUploadZone" class="upload-dropzone glass-subcard" style="display: none;">
+            <input type="file" id="transcriptFileInput" accept=".txt,.vtt,.srt,.md,.json" style="display: none;" onchange="handleTranscriptFileSelected(event)">
+            <div class="dropzone-content" onclick="document.getElementById('transcriptFileInput').click()">
+              <span class="upload-icon">📂</span>
+              <h4>Upload Meeting Transcript</h4>
+              <p>Supported: .txt, .vtt, .srt, .md, .json (Max 25MB). Click to browse.</p>
+              <div id="uploadProgress" class="upload-status" style="display: none;">Uploading and validating...</div>
+            </div>
+          </div>
+
+          <div id="transcriptsListContainer" class="transcripts-grid">
+            <!-- Dynamic Transcripts List -->
+          </div>
+        </div>
+      </section>
+
+      <!-- View: Personal Assistant Search & Past Archive -->
+      <section id="searchView" class="view-section" style="display: none;">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title">Search & Past Meetings Archive</h1>
+            <p class="section-subtitle">Full-text search across titles, notes, and transcripts for meetings you participate in.</p>
+          </div>
+        </div>
+
+        <!-- Search Filter Bar -->
+        <div class="search-filter-card glass-card">
+          <form id="searchForm" onsubmit="executeSearch(event)" class="search-form">
+            <div class="search-input-group">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="searchQueryInput" class="form-input search-input" placeholder="Search keywords across meeting titles, notes, or transcripts...">
+            </div>
+            <div class="search-filters-row">
+              <div class="filter-col">
+                <label>From Date</label>
+                <input type="datetime-local" id="searchStartDate" class="form-input">
+              </div>
+              <div class="filter-col">
+                <label>To Date</label>
+                <input type="datetime-local" id="searchEndDate" class="form-input">
+              </div>
+              <div class="filter-col">
+                <label>Role Scope</label>
+                <select id="searchRoleSelect" class="form-input">
+                  <option value="">All Participated Meetings</option>
+                  <option value="personal_assistant">Personal Assistant Delegation</option>
+                  <option value="agenda_owner">Agenda Owner Meetings</option>
+                  <option value="note_taker">Note Taker Meetings</option>
+                </select>
+              </div>
+              <div class="filter-col filter-action">
+                <button type="submit" class="btn btn-primary">Search</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div id="searchResultsContainer" class="search-results-grid">
+          <!-- Dynamic Results -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal Drawer: Transcript Full Text Viewer -->
+    <div id="transcriptTextModal" class="modal-backdrop" style="display: none;">
+      <div class="modal-dialog glass-card">
+        <div class="modal-header">
+          <h3 id="modalTranscriptTitle">Transcript Text</h3>
+          <button class="modal-close" onclick="closeTranscriptModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <pre id="modalTranscriptContent" class="transcript-text-pre"></pre>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeTranscriptModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
