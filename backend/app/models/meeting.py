@@ -16,9 +16,6 @@ if TYPE_CHECKING:
     from app.models.meeting_participant import MeetingParticipant
     from app.models.calendar import Calendar
     from app.models.meeting_source import MeetingSource
-    from app.models.meeting_note import MeetingNote
-    from app.models.transcript import Transcript
-
 
 
 class Meeting(Base):
@@ -155,15 +152,3 @@ class Meeting(Base):
         "Calendar",
         back_populates="meetings",
     )
-
-    notes: Mapped[list["MeetingNote"]] = relationship(
-        "MeetingNote",
-        back_populates="meeting",
-        cascade="all, delete-orphan",
-    )
-
-    transcripts: Mapped[list["Transcript"]] = relationship(
-        "Transcript",
-        back_populates="meeting",
-        cascade="all, delete-orphan",
-    )

@@ -4,8 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
-from app.models.user import User
 from app.repositories.calendar_repository import get_calendar_by_id
 from app.services.calendar_service import sync_user_calendars
 from app.services.google_calendar_service import list_calendar_events
@@ -19,15 +17,14 @@ router = APIRouter(
 
 
 @router.post("/sync")
-@router.get("/sync")
 def sync_calendars(
+    user_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     try:
         calendars = sync_user_calendars(
             db=db,
-            user_id=current_user.id,
+            user_id=user_id,
         )
 
         meeting_count = 0
@@ -35,7 +32,7 @@ def sync_calendars(
         for calendar in calendars:
             meeting_count += sync_calendar_meetings(
                 db=db,
-                user_id=current_user.id,
+                user_id=user_id,
                 calendar=calendar,
             )
 
@@ -62,14 +59,14 @@ def sync_calendars(
 
 @router.get("/events")
 def get_calendar_events(
+    user_id: UUID,
     google_calendar_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     try:
         events, _ = list_calendar_events(
             db=db,
-            user_id=current_user.id,
+            user_id=user_id,
             google_calendar_id=google_calendar_id,
         )
 
@@ -88,13 +85,13 @@ def get_calendar_events(
 @router.post("/sync/{calendar_id}/meetings")
 def sync_meetings(
     calendar_id: UUID,
+    user_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     calendar = get_calendar_by_id(
         db=db,
         calendar_id=calendar_id,
-        user_id=current_user.id,
+        user_id=user_id,
     )
 
     if not calendar:
@@ -106,7 +103,7 @@ def sync_meetings(
     try:
         count = sync_calendar_meetings(
             db=db,
-            user_id=current_user.id,
+            user_id=user_id,
             calendar=calendar,
         )
 
@@ -125,16 +122,16 @@ def sync_meetings(
 @router.post("/watch/{calendar_id}")
 def watch_calendar(
     calendar_id: UUID,
+    user_id: UUID,
     webhook_url: str | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     from app.services.calendar_watch_service import register_calendar_watch
 
     calendar = get_calendar_by_id(
         db=db,
         calendar_id=calendar_id,
-        user_id=current_user.id,
+        user_id=user_id,
     )
 
     if not calendar:
@@ -146,7 +143,7 @@ def watch_calendar(
     try:
         sync_state = register_calendar_watch(
             db=db,
-            user_id=current_user.id,
+            user_id=user_id,
             calendar=calendar,
             webhook_url=webhook_url,
         )
@@ -178,15 +175,15 @@ def watch_calendar(
 @router.post("/stop-watch/{calendar_id}")
 def stop_calendar_watch_route(
     calendar_id: UUID,
+    user_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     from app.services.calendar_watch_service import stop_calendar_watch_for_calendar
 
     calendar = get_calendar_by_id(
         db=db,
         calendar_id=calendar_id,
-        user_id=current_user.id,
+        user_id=user_id,
     )
 
     if not calendar:
@@ -196,9 +193,9 @@ def stop_calendar_watch_route(
         )
 
     try:
-        stop_calendar_watch_for_calendar(
+        sync_state = stop_calendar_watch_for_calendar(
             db=db,
-            user_id=current_user.id,
+            user_id=user_id,
             calendar=calendar,
         )
 
@@ -217,15 +214,15 @@ def stop_calendar_watch_route(
 @router.get("/status/{calendar_id}")
 def get_calendar_sync_status(
     calendar_id: UUID,
+    user_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     from app.repositories.calendar_sync_repository import get_calendar_sync
 
     calendar = get_calendar_by_id(
         db=db,
         calendar_id=calendar_id,
-        user_id=current_user.id,
+        user_id=user_id,
     )
 
     if not calendar:

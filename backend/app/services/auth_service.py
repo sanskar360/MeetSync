@@ -12,25 +12,6 @@ from app.repositories.user_repository import (
 )
 
 
-from app.models.meeting import Meeting
-from app.models.meeting_participant import MeetingParticipant
-
-
-def _link_user_to_existing_records(db: Session, user) -> None:
-    """
-    Links any existing meetings or participant records created prior to user signup.
-    """
-    db.query(MeetingParticipant).filter(
-        MeetingParticipant.email.ilike(user.email),
-        MeetingParticipant.user_id.is_(None),
-    ).update({"user_id": user.id}, synchronize_session=False)
-
-    db.query(Meeting).filter(
-        Meeting.organizer_email.ilike(user.email),
-        Meeting.organizer_user_id.is_(None),
-    ).update({"organizer_user_id": user.id}, synchronize_session=False)
-
-
 def get_or_create_user(
     db: Session,
     google_sub: str,
@@ -48,8 +29,6 @@ def get_or_create_user(
         user.email = email
         user.profile_picture = profile_picture
 
-        _link_user_to_existing_records(db=db, user=user)
-
         db.commit()
         db.refresh(user)
 
@@ -62,8 +41,6 @@ def get_or_create_user(
         name=name,
         profile_picture=profile_picture,
     )
-
-    _link_user_to_existing_records(db=db, user=user)
 
     db.commit()
     db.refresh(user)

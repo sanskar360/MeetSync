@@ -5,8 +5,6 @@ from app.models.google_credential import GoogleCredential
 from app.models.calendar import Calendar
 from app.models.meeting_participant import MeetingParticipant
 from app.models.meeting_source import MeetingSource
-from app.models.meeting_note import MeetingNote
-from app.models.transcript import Transcript
 
 __all__ = [
     "User",
@@ -16,6 +14,4 @@ __all__ = [
     "Calendar",
     "MeetingParticipant",
     "MeetingSource",
-    "MeetingNote",
-    "Transcript",
-]
+]

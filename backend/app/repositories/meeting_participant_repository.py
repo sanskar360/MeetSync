@@ -51,25 +51,3 @@ def update_participant(
     participant.response_status = response_status
 
     return participant
-
-
-def get_participant_by_id(
-    db: Session,
-    participant_id,
-    meeting_id=None,
-) -> MeetingParticipant | None:
-    query = db.query(MeetingParticipant).filter(MeetingParticipant.id == participant_id)
-    if meeting_id is not None:
-        query = query.filter(MeetingParticipant.meeting_id == meeting_id)
-    return query.first()
-
-
-def update_participant_role(
-    db: Session,
-    participant: MeetingParticipant,
-    role: str,
-) -> MeetingParticipant:
-    participant.role = role
-    db.commit()
-    db.refresh(participant)
-    return participant

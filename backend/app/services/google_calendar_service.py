@@ -17,10 +17,8 @@ from app.repositories.google_credential_repository import (
 logger = logging.getLogger(__name__)
 
 GOOGLE_CALENDAR_SCOPES = [
-    "openid",
-    "https://www.googleapis.com/auth/userinfo.email",
-    "https://www.googleapis.com/auth/userinfo.profile",
     "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events.readonly",
 ]
 
 
