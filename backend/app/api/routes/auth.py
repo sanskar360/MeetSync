@@ -230,7 +230,8 @@ def google_callback(
 
     if is_browser_nav:
         # Browser redirect directly to dashboard
-        redirect_res = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+        target_url = settings.FRONTEND_URL or "/"
+        redirect_res = RedirectResponse(url=target_url, status_code=status.HTTP_302_FOUND)
         redirect_res.delete_cookie(OAUTH_STATE_COOKIE_NAME, path="/")
         redirect_res.set_cookie(
             key=SESSION_COOKIE_NAME,

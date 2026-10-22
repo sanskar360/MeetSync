@@ -89,7 +89,12 @@ def search_meetings_for_user(
 
         matching_transcript_meeting_ids = (
             db.query(Transcript.meeting_id)
-            .filter(Transcript.content_text.ilike(q_term))
+            .filter(
+                or_(
+                    Transcript.original_filename.ilike(q_term),
+                    Transcript.content_text.ilike(q_term),
+                )
+            )
             .subquery()
         )
 
@@ -138,9 +143,12 @@ def search_meetings_for_user(
                     matching_notes_count += 1
                     snippets.extend([f"Note: {s}" for s in snips[:1]])
 
-            # Check transcripts
+            # Check transcripts & uploaded documents
             transcripts = db.query(Transcript).filter(Transcript.meeting_id == m.id).all()
             for t in transcripts:
+                if t.original_filename and query.q.lower() in t.original_filename.lower():
+                    matching_transcripts_count += 1
+                    snippets.append(f"Document: {t.original_filename}")
                 snips = _extract_snippets(t.content_text, query.q)
                 if snips:
                     matching_transcripts_count += 1

@@ -66,15 +66,21 @@ def is_meeting_event(event: dict) -> bool:
     Determine whether a Google Calendar event should be
     treated as a MeetSync meeting.
     """
+    # Exclude working locations
+    if event.get("eventType") == "workingLocation":
+        return False
+
     # Events with attendees are considered meetings.
     if event.get("attendees"):
         return True
 
     # Events with Google Meet/conference information are meetings.
-    if event.get("hangoutLink"):
+    if event.get("hangoutLink") or event.get("conferenceData"):
         return True
 
-    if event.get("conferenceData"):
+    # Default events with a scheduled start time/date are calendar meetings
+    start_data = event.get("start", {})
+    if "dateTime" in start_data or "date" in start_data:
         return True
 
     return False

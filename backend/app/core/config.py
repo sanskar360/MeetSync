@@ -28,6 +28,7 @@ class Settings:
     )
 
     # Authentication & Session Security (Phase 2)
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
     ENV: str = os.getenv("ENV", "development")
     JWT_SECRET_KEY: str = os.getenv(
         "JWT_SECRET_KEY", "dev-insecure-secret-key-change-in-production-meetsync-32chars"

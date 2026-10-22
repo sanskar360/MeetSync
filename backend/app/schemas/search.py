@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal, Self
+from typing import Any, Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -18,6 +18,19 @@ class MeetingSearchQuery(BaseModel):
     role: MeetingRoleFilter | None = None
     page: int = Field(default=1, ge=1)
     limit: int = Field(default=20, ge=1, le=100)
+
+    @model_validator(mode="before")
+    @classmethod
+    def clean_empty_params(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            cleaned = {}
+            for k, v in data.items():
+                if isinstance(v, str) and not v.strip():
+                    cleaned[k] = None
+                else:
+                    cleaned[k] = v
+            return cleaned
+        return data
 
     @model_validator(mode="after")
     def validate_date_range(self) -> Self:
