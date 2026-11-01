@@ -37,16 +37,40 @@ router = APIRouter(
 )
 
 
+def require_personal_assistant_user(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    Enforces that the user has the 'personal_assistant' role in at least one meeting.
+    Cross-meeting search and past archive are strictly restricted to Personal Assistants.
+    """
+    has_role = (
+        db.query(MeetingParticipant.id)
+        .filter(
+            (MeetingParticipant.user_id == current_user.id)
+            | (MeetingParticipant.email.ilike(current_user.email)),
+            MeetingParticipant.role == "personal_assistant",
+        )
+        .first()
+    )
+    if not has_role:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Cross-meeting search and past archive are restricted exclusively to Personal Assistants.",
+        )
+    return current_user
+
+
 @router.get("/search", response_model=MeetingSearchResponse)
 def search_meetings(
     query: Annotated[MeetingSearchQuery, Depends()],
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_personal_assistant_user),
     db: Session = Depends(get_db),
 ):
     """
     Search and browse meetings across titles, notes, and transcripts.
-    Strictly scoped to meetings where the authenticated user is an authorized member.
-    Personal Assistants can filter by role to review delegated meeting portfolios.
+    Strictly restricted to Personal Assistants and scoped to their authorized meetings.
     """
     results, total = search_meetings_for_user(
         db=db,
@@ -66,11 +90,11 @@ def search_meetings(
 def get_past_meetings(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_personal_assistant_user),
     db: Session = Depends(get_db),
 ):
     """
-    Browse past meetings archive for the authenticated user.
+    Browse past meetings archive for Personal Assistants.
     """
     now = datetime.now(timezone.utc)
     query = MeetingSearchQuery(
@@ -110,6 +134,20 @@ def get_consolidated_meeting_details(
         .filter(MeetingParticipant.meeting_id == meeting.id)
         .all()
     )
+
+    # Auto-link participants to registered users if user signed up with that email
+    unlinked = [p for p in participants if p.user_id is None]
+    if unlinked:
+        unlinked_emails = [p.email.lower() for p in unlinked]
+        found_users = db.query(User).filter(User.email.in_(unlinked_emails)).all()
+        user_map = {u.email.lower(): u.id for u in found_users}
+        changed = False
+        for p in unlinked:
+            if p.email.lower() in user_map:
+                p.user_id = user_map[p.email.lower()]
+                changed = True
+        if changed:
+            db.commit()
 
     notes = (
         db.query(MeetingNote)
@@ -168,6 +206,20 @@ def get_consolidated_meeting_details(
             )
         )
 
+    participant_responses = [
+        ParticipantResponse(
+            id=p.id,
+            meeting_id=p.meeting_id,
+            user_id=p.user_id,
+            email=p.email,
+            role=p.role,
+            response_status=p.response_status,
+            joined_at=p.joined_at,
+            is_registered=p.user_id is not None,
+        )
+        for p in participants
+    ]
+
     return MeetingDetailResponse(
         id=meeting.id,
         google_event_id=meeting.google_event_id,
@@ -178,7 +230,7 @@ def get_consolidated_meeting_details(
         meet_url=meeting.meet_url,
         organizer_email=meeting.organizer_email,
         user_role=role,
-        participants=[ParticipantResponse.model_validate(p) for p in participants],
+        participants=participant_responses,
         notes=note_responses,
         transcripts=transcript_responses,
     )

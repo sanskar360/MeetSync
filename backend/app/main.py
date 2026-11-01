@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI
@@ -20,8 +19,16 @@ from app.workers.watch_renewal import watch_renewal_scheduler_task
 
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Automatically organize meeting JSON storage into date folders and index
+    try:
+        from app.services.raw_event_storage import organize_existing_storage
+        organize_existing_storage()
+    except Exception as e:
+        logger.warning("Could not auto-organize storage on startup: %s", e)
+
     scheduler_task = None
     if settings.ENABLE_BACKGROUND_WATCH_SCHEDULER:
         logger.info("Initializing background watch renewal scheduler...")

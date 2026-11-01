@@ -273,3 +273,25 @@ def get_current_user_profile(
     Returns the authenticated user's profile.
     """
     return current_user
+
+@router.post("/logout")
+@router.get("/logout")
+def logout(response: Response):
+    """
+    Clears the HttpOnly session cookie and OAuth state cookie to securely log out the user.
+    """
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME,
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=(settings.ENV.lower() == "production"),
+    )
+    response.delete_cookie(
+        key=OAUTH_STATE_COOKIE_NAME,
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=(settings.ENV.lower() == "production"),
+    )
+    return {"message": "Successfully logged out"}

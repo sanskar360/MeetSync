@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
@@ -28,6 +29,34 @@ from app.services.google_event_parser import (
 )
 from app.services.raw_event_storage import save_raw_event
 
+logger = logging.getLogger(__name__)
+
+# Suffixes that identify non-personal (holiday/shared) Google Calendar IDs.
+_NON_PERSONAL_SUFFIXES = (
+    "#holiday@group.v.calendar.google.com",
+    "#contacts@group.v.calendar.google.com",
+    "#birthdays@group.v.calendar.google.com",
+    "@group.v.calendar.google.com",
+)
+
+_NON_PERSONAL_NAME_KEYWORDS = (
+    "holiday",
+    "holidays",
+    "birthday",
+    "birthdays",
+)
+
+
+def _is_non_personal_calendar(calendar) -> bool:
+    """Return True if this calendar record looks like a holiday/group calendar."""
+    cal_id = (calendar.google_calendar_id or "").lower()
+    if any(cal_id.endswith(s.lower()) for s in _NON_PERSONAL_SUFFIXES):
+        return True
+    name = (calendar.name or "").lower()
+    if any(kw in name for kw in _NON_PERSONAL_NAME_KEYWORDS):
+        return True
+    return False
+
 
 def sync_calendar_meetings(
     db: Session,
@@ -37,10 +66,22 @@ def sync_calendar_meetings(
     """
     Synchronize Google Calendar events into MeetSync.
 
+    Non-personal calendars (holidays, birthdays, shared group calendars) are
+    skipped entirely so no holiday events ever enter the database.
+
     Returns the number of unique meetings processed.
     """
 
     from app.services.google_calendar_service import list_calendar_events
+
+    # --- Guard: skip non-personal calendars ---
+    if _is_non_personal_calendar(calendar):
+        logger.info(
+            "Skipping sync for non-personal calendar '%s' (%s)",
+            calendar.name,
+            calendar.google_calendar_id,
+        )
+        return 0
 
     # Get or create synchronization state for this calendar.
     sync_state = get_calendar_sync(
